@@ -1,0 +1,70 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - weather-net
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - weather-net
+
+  python-collector:
+    build: ./python-collector
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_QUEUE=weather_data
+      - COLLECTION_INTERVAL=1
+      - LATITUDE=-23.5505
+      - LONGITUDE=-46.6333
+    depends_on:
+      - rabbitmq
+    networks:
+      - weather-net
+
+  go-worker:
+    build: ./go-worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_QUEUE=weather_data
+      - API_URL=http://nestjs-api:3000/weather/logs
+    depends_on:
+      - rabbitmq
+      - nestjs-api
+    networks:
+      - weather-net
+
+  nestjs-api:
+    build: ./nestjs-api
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/weatherdb
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      - mongodb
+    networks:
+      - weather-net
+
+  frontend-web:
+    build: ./frontend-web
+    ports:
+      - "80:80"
+    depends_on:
+      - nestjs-api
+    networks:
+      - weather-net
+
+networks:
+  weather-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
