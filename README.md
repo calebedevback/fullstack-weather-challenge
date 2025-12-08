@@ -78,3 +78,6 @@ graph LR
     F[Frontend React] -->|REST API| D
     D -->|GET /pokemon| G[PokéAPI Externa]
 ```
+
+---
+**Desenvolvido por Gabriel Calebe** 🚀
